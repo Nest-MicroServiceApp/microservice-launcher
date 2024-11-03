@@ -1,0 +1,60 @@
+version: '3' #version del docker compose
+
+services:
+
+  nats_servers: #Servidor Nats
+    image: nats:latest #En PRD especificar una versión especifica
+    ports:
+      - "8222:8222"
+
+  client-gateway:
+    build: ./client-gateway #con esto hace la busqueda al docker-file
+    ports:
+      - "3000:3000" #puerto-pc/puerto-servidor
+    volumes:
+      - ./client-gateway/src:/usr/src/app/src
+    command: npm run start:dev
+    environment:
+      - PORT=3000
+      - NATS_SERVERS=nats://nats_servers:4222 #Este es el puerto principal que utilizan los clientes para conectarse al servidor NATS
+
+  proucts-ms:
+    build: ./products-ms #con esto hace la busqueda al docker-file
+    volumes:
+      - ./products-ms/src:/usr/src/app/src
+    command: npm run start:dev
+    environment:
+      - PORT=3001
+      - NATS_SERVERS=nats://nats_servers:4222
+      - DATABASE_URL=file:./dev.db
+
+#  Ordes MS
+  orders-ms:
+      depends_on:
+        - orders-db
+      build: ./orders-ms #con esto hace la busqueda al docker-file
+      volumes:
+        - ./orders-ms/src:/usr/src/app/src
+      command: npm run start:dev
+      environment:
+        - PORT=3002
+        - DB_HOST=orders-db
+        - DB_PORT=5432
+        - DB_NAME=ordersdb
+        - DB_USERNAME=postgres
+        - DB_PASSWORD=123456
+        - NATS_SERVERS=nats://nats_servers:4222
+
+# Orders DB 
+  orders-db:
+    container_name: orders_database
+    image: postgres:16.2
+    restart: always
+    volumes:
+      - ./orders-ms/postgres:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: ordersdb
+      POSTGRES_PASSWORD: 123456

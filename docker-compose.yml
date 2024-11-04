@@ -2,7 +2,8 @@ version: '3' #version del docker compose
 
 services:
 
-  nats_servers: #Servidor Nats
+  nats_servers:
+    #Servidor Nats
     image: nats:latest #En PRD especificar una versión especifica
     ports:
       - "8222:8222"
@@ -28,24 +29,26 @@ services:
       - NATS_SERVERS=nats://nats_servers:4222
       - DATABASE_URL=file:./dev.db
 
-#  Ordes MS
+  #  Ordes MS
   orders-ms:
-      depends_on:
-        - orders-db
-      build: ./orders-ms #con esto hace la busqueda al docker-file
-      volumes:
-        - ./orders-ms/src:/usr/src/app/src
-      command: npm run start:dev
-      environment:
-        - PORT=3002
-        - DB_HOST=orders-db
-        - DB_PORT=5432
-        - DB_NAME=ordersdb
-        - DB_USERNAME=postgres
-        - DB_PASSWORD=123456
-        - NATS_SERVERS=nats://nats_servers:4222
+    depends_on:
+      orders-db:
+        condition: service_healthy
+    build: ./orders-ms #con esto hace la busqueda al docker-file
+    volumes:
+      - ./orders-ms/src:/usr/src/app/src
+    command: npm run start:dev
+    environment:
+      - STAGE=dev
+      - PORT=3002
+      - DB_HOST=orders-db
+      - DB_PORT=5432
+      - DB_NAME=ordersdb
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=123456
+      - NATS_SERVERS=nats://nats_servers:4222
 
-# Orders DB 
+  # Orders DB 
   orders-db:
     container_name: orders_database
     image: postgres:16.2
@@ -58,3 +61,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_DB: ordersdb
       POSTGRES_PASSWORD: 123456
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

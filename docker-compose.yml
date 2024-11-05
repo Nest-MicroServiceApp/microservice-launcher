@@ -11,7 +11,7 @@ services:
   client-gateway:
     build: ./client-gateway #con esto hace la busqueda al docker-file
     ports:
-      - "3000:3000" #puerto-pc/puerto-servidor
+      - ${CLIENT_GATEWAY_PORT}:3000 #puerto-pc/puerto-servidor
     volumes:
       - ./client-gateway/src:/usr/src/app/src
     command: npm run start:dev

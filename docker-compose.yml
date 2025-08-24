@@ -20,9 +20,9 @@ services:
       - NATS_SERVERS=nats://nats_servers:4222 #Este es el puerto principal que utilizan los clientes para conectarse al servidor NATS
 
   proucts-ms:
-    build: ./products-ms #con esto hace la busqueda al docker-file
+    build: ./products-microservice #con esto hace la busqueda al docker-file
     volumes:
-      - ./products-ms/src:/usr/src/app/src
+      - ./products-microservice/src:/usr/src/app/src
     command: npm run start:dev
     environment:
       - PORT=3001
@@ -56,9 +56,10 @@ services:
     volumes:
       - ./orders-ms/postgres:/var/lib/postgresql/data
     ports:
-      - 5432:5432
+      - 5436:5432
     environment:
       POSTGRES_USER: postgres
+      PGUSER: postgres
       POSTGRES_DB: ordersdb
       POSTGRES_PASSWORD: 123456
     healthcheck:
@@ -66,3 +67,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+#===========================
+#PAYMENTS Microservicio
+#===========================
+  payments-ms:
+      container_name: payments-ms
+      build: ./payments-ms #con esto hace la busqueda al docker-file
+      volumes:
+        - ./payments-ms/src:/usr/src/app/src
+      command: npm run start:dev
+      ports:
+      - ${PAYMENTS_MS_PORT}:${PAYMENTS_MS_PORT}
+      environment:
+        - STAGE=dev
+        - PORT=${PAYMENTS_MS_PORT}
+        - NATS_SERVERS=nats://nats_servers:4222
+        - STRIPE_SECRET=${STRIPE_SECRET}
+        - STRIPE_SUCCESS_URL=${STRIPE_SUCCESS_URL}
+        - STRIPE_CANCEL_URL=${STRIPE_CANCEL_URL}
+        - STRIPE_ENPOINT_SECRET=${STRIPE_ENPOINT_SECRET}
